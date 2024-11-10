@@ -15,11 +15,11 @@ This document describes the architecture and design considerations for a real-ti
 - **Monitoring and Observability**: System performance and issues must be trackable and diagnosable, with comprehensive logging and alerting.
 
 ## 4.Assumptions:
-- There are 10 million users as total and 100.000 concurrent using users at peak
+- There are 100 million users as total and 1.000.000 concurrent using users at peak
 - The maximum concurrent users can join the same quiz session is 10.000 
 - Each user submits an answer every 10-20 seconds
 - Each quiz session have an average duration of 1 - 1.5 hours
--  the system should be capable of hosting 1.000.000 simultaneous quiz sessions.
+- The system should be capable of hosting 100.000 simultaneous quiz sessions.
 
 ## 4. System Architecture
 The architecture consists of the following components:
