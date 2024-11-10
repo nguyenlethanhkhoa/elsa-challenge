@@ -9,3 +9,4 @@
 - This app will consume ports 8000 and 8080. Please make sure both of them are free.
 
 # System Design Document
+Please see the document [here](https://github.com/nguyenlethanhkhoa/elsa-challenge/blob/main/system-design.md)
