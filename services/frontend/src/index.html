@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Quiz Application</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+
+<body>
+    <h1>Quiz Application</h1>
+
+    <!-- Quiz Section -->
+    <div id="quiz-section">
+        <h2>Available Quizzes</h2>
+        <div id="quizzes"></div>
+    </div>
+
+    <!-- Questions Section -->
+    <div id="questions-section" style="display: none;">
+        <h2>Questions</h2>
+        <div id="questions"></div>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <div id="leaderboard-section" style="display: none;">
+        <h2>Leaderboard</h2>
+        <div id="leaderboard"></div>
+    </div>
+
+    <script>
+        // Fetch and display quizzes as buttons
+        async function loadQuizzes() {
+            try {
+                const response = await fetch('http://localhost:8080/dummy-data.json');
+                const quizzes = await response.json();
+
+                const quizzesDiv = document.getElementById('quizzes');
+                quizzes.forEach(quiz => {
+                    const button = document.createElement('button');
+                    button.textContent = quiz.title;
+                    button.onclick = () => startQuizSession(quiz.id);
+                    quizzesDiv.appendChild(button);
+                    quizzesDiv.appendChild(document.createElement('br'));
+                });
+            } catch (error) {
+                console.error("Failed to load quizzes:", error);
+            }
+        }
+
+        // Start the quiz session with Socket.io
+        let socket;
+        socket = io('http://localhost:8000', { path: '/socket.io' });
+        socket.on('quiz_session_started', async (message) => {
+            document.getElementById('quiz-section').style.display = 'none';
+            document.getElementById('questions-section').style.display = 'block';
+            document.getElementById('leaderboard-section').style.display = 'block';
+
+            const quizId = localStorage.getItem('quiz_id');
+            localStorage.setItem('user_id', message.user_id);
+
+            // Load questions for the quiz
+            await loadQuestions(quizId);
+
+            // Initialize empty leaderboard
+            document.getElementById('leaderboard').innerHTML = '';
+        });
+        socket.on('leaderboard_updated', updateLeaderboard);
+        
+        function startQuizSession(quizId) {
+
+            localStorage.setItem('quiz_id', quizId);
+            const userId = localStorage.getItem('user_id');
+            socket.emit('quiz_session_start', { quiz_id: quizId, user_id: userId });
+        }
+
+        // Fetch and display questions with answer buttons
+        async function loadQuestions(quizId) {
+            try {
+                const response = await fetch(`http://localhost:8080/dummy-data.json`);
+                const quizzes = await response.json();
+                const selectedQuiz = quizzes.find((quiz) => quiz.id == quizId);
+                const questions = selectedQuiz['questions'];
+
+                const questionsDiv = document.getElementById('questions');
+                questionsDiv.innerHTML = '';
+
+                questions.forEach(question => {
+                    const questionContainer = document.createElement('div');
+                    const questionText = document.createElement('p');
+                    questionText.textContent = question.title;
+
+                    questionContainer.appendChild(questionText);
+
+                    question.answers.forEach(answer => {
+                        const answerButton = document.createElement('button');
+                        const userId = localStorage.getItem('user_id');
+                        answerButton.textContent = answer.is_correct ? answer.title + ' (correct)' : answer.title;
+                        answerButton.onclick = () => submitAnswer(userId, answer.id, question.id, quizId);
+                        questionContainer.appendChild(answerButton);
+                    });
+
+                    questionsDiv.appendChild(questionContainer);
+                });
+            } catch (error) {
+                console.error("Failed to load questions:", error);
+            }
+        }
+
+        // Submit selected answer
+        function submitAnswer(userId, answerId, questionId, quizId) {
+            socket.emit('submit_answer', { user_id: userId, answer_id: answerId, question_id: questionId, quiz_id: quizId });
+        }
+
+        // Update leaderboard
+        function updateLeaderboard(leaderboardData) {
+            const leaderboardDiv = document.getElementById('leaderboard');
+            leaderboardDiv.innerHTML = '';
+            for (const userId in leaderboardData) {
+                const entryDiv = document.createElement('div');
+                entryDiv.textContent = `User: ${userId}, Score: ${leaderboardData[userId]}`;
+                leaderboardDiv.appendChild(entryDiv);
+            }
+        }
+
+        // Initialize the quiz loading on page load
+        loadQuizzes();
+    </script>
+</body>
+
+</html>
